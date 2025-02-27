@@ -261,7 +261,134 @@ app.get('/grades', async (req, res) => {
   }
 });
 
-app.post('/grades', async (req, res) => {
+app.get('/addGrade', (req, res) => {
+  // Return a form or documentation for adding grades
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Add Grade</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+          }
+          .form-group {
+            margin-bottom: 15px;
+          }
+          label {
+            display: block;
+            margin-bottom: 5px;
+          }
+          input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+          }
+          button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+          button:hover {
+            background-color: #45a049;
+          }
+          .api-doc {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Add Grade</h1>
+        <form id="gradeForm">
+          <div class="form-group">
+            <label for="student_id">Student ID:</label>
+            <input type="number" id="student_id" name="student_id" required>
+          </div>
+          <div class="form-group">
+            <label for="class_id">Class ID:</label>
+            <input type="number" id="class_id" name="class_id" required>
+          </div>
+          <div class="form-group">
+            <label for="quarter">Quarter:</label>
+            <select id="quarter" name="quarter" required>
+              <option value="1st">First Quarter</option>
+              <option value="2nd">Second Quarter</option>
+              <option value="3rd">Third Quarter</option>
+              <option value="4th">Fourth Quarter</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="grade">Grade:</label>
+            <input type="number" id="grade" name="grade" step="0.01" min="0" max="100" required>
+          </div>
+          <div class="form-group">
+            <label for="grade_date">Grade Date:</label>
+            <input type="date" id="grade_date" name="grade_date" required>
+          </div>
+          <button type="submit">Submit Grade</button>
+        </form>
+
+        <div class="api-doc">
+          <h2>API Documentation</h2>
+          <p>To add a grade programmatically, send a POST request to <code>/addGrade</code> with the following JSON structure:</p>
+          <pre>
+{
+  "student_id": number,
+  "class_id": number,
+  "quarter": "1st" | "2nd" | "3rd" | "4th",
+  "grade": number,
+  "grade_date": "YYYY-MM-DD"
+}
+          </pre>
+        </div>
+
+        <script>
+          document.getElementById('gradeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+              student_id: parseInt(document.getElementById('student_id').value),
+              class_id: parseInt(document.getElementById('class_id').value),
+              quarter: document.getElementById('quarter').value,
+              grade: parseFloat(document.getElementById('grade').value),
+              grade_date: document.getElementById('grade_date').value
+            };
+
+            try {
+              const response = await fetch('/addGrade', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+              });
+
+              const result = await response.json();
+              if (response.ok) {
+                alert('Grade added successfully!');
+                document.getElementById('gradeForm').reset();
+              } else {
+                alert('Error: ' + result.error);
+              }
+            } catch (error) {
+              alert('Error submitting grade: ' + error.message);
+            }
+          });
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+app.post('/addGrade', async (req, res) => {
   try {
     const { student_id, class_id, quarter, grade, grade_date } = req.body;
     console.log('Received grade data:', req.body);
