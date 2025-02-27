@@ -103,45 +103,20 @@ app.post('/addStudent', async (req, res) => {
       enrollment_date
     } = req.body;
 
-    console.log('Received student data:', req.body); // Debug log
-
     const result = await pool.query(
       `INSERT INTO students 
-       (first_name, last_name, middle_name, gender, date_of_birth, 
-        phone, address, grade_level, enrollment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING 
-         student_id,
-         last_name,
-         first_name,
-         middle_name,
-         gender,
-         TO_CHAR(date_of_birth, 'YYYY-MM-DD') as date_of_birth,
-         phone,
-         address,
-         grade_level,
-         TO_CHAR(enrollment_date, 'YYYY-MM-DD') as enrollment_date`,
-      [
-        first_name,
-        last_name,
-        middle_name || '',
-        gender,
-        date_of_birth,
-        phone || '',
-        address || '',
-        grade_level || 0,
-        enrollment_date || new Date().toISOString()
-      ]
+       (first_name, last_name, middle_name, gender, date_of_birth, phone, address, grade_level, enrollment_date) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING *`,
+      [first_name, last_name, middle_name, gender, date_of_birth, phone, address, grade_level, enrollment_date]
     );
-    
-    console.log('Inserted student:', result.rows[0]);
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error details:', error); // Detailed error log
+    console.error('Error adding student:', error);
     res.status(500).json({ 
       error: 'Failed to add student',
-      details: error.message,
-      hint: error.hint
+      details: error.message 
     });
   }
 });
@@ -174,42 +149,31 @@ app.get('/teachers', async (req, res) => {
 
 app.post('/addTeacher', async (req, res) => {
   try {
-    console.log('Received teacher data:', req.body);
+    const {
+      first_name,
+      last_name,
+      middle_name,
+      gender,
+      email,
+      phone,
+      department,
+      hire_date
+    } = req.body;
 
-    const requiredFields = ['first_name', 'last_name', 'gender', 'department', 'hire_date'];
-    for (const field of requiredFields) {
-      if (!req.body[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
-    }
-
-    // Match the exact column names and types from your database schema
     const result = await pool.query(
       `INSERT INTO teachers 
-       (first_name, last_name, middle_name, gender, email, 
-        phone, department, hire_date, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Active')
+       (first_name, last_name, middle_name, gender, email, phone, department, hire_date) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [
-        req.body.first_name.substring(0, 50),
-        req.body.last_name.substring(0, 50),
-        req.body.middle_name?.substring(0, 50) || null,
-        req.body.gender.substring(0, 10),
-        req.body.email?.substring(0, 100) || null,
-        req.body.phone?.substring(0, 15) || null,
-        req.body.department.substring(0, 50),
-        req.body.hire_date || new Date().toISOString().split('T')[0] // Use provided date or current date
-      ]
+      [first_name, last_name, middle_name, gender, email, phone, department, hire_date]
     );
 
-    console.log('Database response:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Detailed error:', error);
-    res.status(500).json({
+    console.error('Error adding teacher:', error);
+    res.status(500).json({ 
       error: 'Failed to add teacher',
-      details: error.message,
-      hint: error.hint
+      details: error.message 
     });
   }
 });
@@ -245,47 +209,28 @@ app.get('/classes', async (req, res) => {
 
 app.post('/addClass', async (req, res) => {
   try {
-    console.log('Received class data:', req.body);
-
-    const { class_name, teacher_id, room_number, schedule_time, max_capacity } = req.body;
-    
-    // Validate required fields
-    if (!class_name || !teacher_id || !room_number || !schedule_time || !max_capacity) {
-      throw new Error('All fields are required');
-    }
-
-    // Validate teacher_id exists
-    const teacherExists = await pool.query(
-      'SELECT teacher_id FROM teachers WHERE teacher_id = $1',
-      [teacher_id]
-    );
-
-    if (teacherExists.rows.length === 0) {
-      throw new Error(`Teacher with ID ${teacher_id} does not exist`);
-    }
+    const {
+      class_name,
+      teacher_id,
+      department_id,
+      schedule,
+      room_number
+    } = req.body;
 
     const result = await pool.query(
       `INSERT INTO classes 
-       (class_name, teacher_id, room_number, schedule_time, max_capacity)
-       VALUES ($1, $2, $3, $4, $5)
+       (class_name, teacher_id, department_id, schedule, room_number) 
+       VALUES ($1, $2, $3, $4, $5) 
        RETURNING *`,
-      [
-        class_name,
-        parseInt(teacher_id),
-        room_number,
-        schedule_time,
-        parseInt(max_capacity)
-      ]
+      [class_name, teacher_id, department_id, schedule, room_number]
     );
 
-    console.log('Added class:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding class:', error);
-    res.status(500).json({
+    res.status(500).json({ 
       error: 'Failed to add class',
-      details: error.message,
-      hint: error.hint
+      details: error.message 
     });
   }
 });
@@ -1565,36 +1510,18 @@ app.use((err, req, res, next) => {
 // Add a root route handler
 app.get('/', (req, res) => {
   const endpoints = [
-    {
-      method: 'GET',
-      path: '/students',
-      description: 'Get all students'
-    },
-    {
-      method: 'POST',
-      path: '/addStudent',
-      description: 'Add a new student'
-    },
-    {
-      method: 'GET',
-      path: '/teachers',
-      description: 'Get all teachers'
-    },
-    {
-      method: 'POST',
-      path: '/addTeacher',
-      description: 'Add a new teacher'
-    },
-    {
-      method: 'GET',
-      path: '/classes',
-      description: 'Get all classes'
-    },
-    {
-      method: 'POST',
-      path: '/addClass',
-      description: 'Add a new class'
-    }
+    { method: 'GET', path: '/api/students', description: 'Get all students' },
+    { method: 'GET', path: '/api/teachers', description: 'Get all teachers' },
+    { method: 'GET', path: '/api/classes', description: 'Get all classes' },
+    { method: 'GET', path: '/api/grades', description: 'Get all grades' },
+    { method: 'GET', path: '/api/departments', description: 'Get all departments' },
+    { method: 'GET', path: '/api/attendance', description: 'Get all attendance records' },
+    { method: 'POST', path: '/addStudent', description: 'Add a new student' },
+    { method: 'POST', path: '/addTeacher', description: 'Add a new teacher' },
+    { method: 'POST', path: '/addClass', description: 'Add a new class' },
+    { method: 'POST', path: '/addGrade', description: 'Add a new grade' },
+    { method: 'POST', path: '/addAttendance', description: 'Add a new attendance record' },
+    { method: 'POST', path: '/addDepartment', description: 'Add a new department' }
   ];
 
   // Send HTML response
