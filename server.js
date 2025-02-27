@@ -1560,4 +1560,84 @@ app.listen(port, async () => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something broke!' });
+});
+
+// Add a root route handler
+app.get('/', (req, res) => {
+  const endpoints = [
+    {
+      method: 'GET',
+      path: '/students',
+      description: 'Get all students'
+    },
+    {
+      method: 'POST',
+      path: '/addStudent',
+      description: 'Add a new student'
+    },
+    {
+      method: 'GET',
+      path: '/teachers',
+      description: 'Get all teachers'
+    },
+    {
+      method: 'POST',
+      path: '/addTeacher',
+      description: 'Add a new teacher'
+    },
+    {
+      method: 'GET',
+      path: '/classes',
+      description: 'Get all classes'
+    },
+    {
+      method: 'POST',
+      path: '/addClass',
+      description: 'Add a new class'
+    }
+  ];
+
+  // Send HTML response
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>School Management API</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          h1 {
+            color: #333;
+          }
+          .endpoint {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+          }
+          .method {
+            font-weight: bold;
+            color: #0066cc;
+          }
+          .path {
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>School Management API Endpoints</h1>
+        ${endpoints.map(endpoint => `
+          <div class="endpoint">
+            <span class="method">${endpoint.method}</span>
+            <span class="path">${endpoint.path}</span>
+            <p>${endpoint.description}</p>
+          </div>
+        `).join('')}
+      </body>
+    </html>
+  `);
 }); 
